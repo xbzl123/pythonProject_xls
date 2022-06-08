@@ -18,11 +18,12 @@ tableWidget : QTableWidget
 def readXls(strpath=""):
     workbook = xlrd.open_workbook_xls(strpath[0][0])
     table = workbook.sheets()[0]
+    tableWidget.setItem(3,1,QTableWidgetItem('test'))
     # table0 = workbook.sheet_by_index(0)
     # 按行读取
     for i in range(table.nrows):
-        print(table.row_values(i))
-        # tableWidget.setItem(i, 0, QTableWidgetItem(table.row_values(i)))
+        for j in range(table.ncols):
+            tableWidget.setItem(i, j, QTableWidgetItem(table.cell(i, j).value))
         # tableWidget.viewport().update()
     # 按列读取
     # for i in range(table.ncols):
