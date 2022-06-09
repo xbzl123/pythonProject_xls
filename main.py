@@ -21,6 +21,7 @@ app = QtWidgets.QApplication(sys.argv)
 tableWidget: QTableWidget
 table: Sheet
 list = []
+translatenum = 0
 
 
 def readXls(strpath=""):
@@ -71,9 +72,10 @@ def networkrequest(tarlan = "en", content = "", colpos = 0):
     result = load[0][0][0]
     # print("the %s translat result is %s:", content, result)
     # tableWidget.setItem(colpos, 1, QTableWidgetItem(result))
-    list.pop(0)
-    print(list.count())
-    # dialog.refreshProgress(list.count())
+    global translatenum
+    translatenum = translatenum+1
+    print(translatenum)
+    dialog.refreshProgress(translatenum)
     return result
 
 
@@ -82,14 +84,16 @@ def translate():
     for i in range(table.nrows):
         inputContent = table.cell(i, 1).value
         if len(inputContent) > 0:
-            list.append(1)
+            list.append(i)
             # print("inputContent = "+inputContent)
-            try:
-                _thread.start_new_thread(networkrequest, ("en", inputContent, i))
-            except requests.exceptions.ConnectionError:
-                print("Error: unable to start thread")
+    dialog = myProgressDialog(int(list.count()))
+    for i in range(list.count()):
+        inputContent = table.cell(list[i], 1).value
+        try:
+            _thread.start_new_thread(networkrequest, ("en", inputContent, i))
+        except requests.exceptions.ConnectionError:
+            print("Error: unable to start thread")
 
-    dialog = myProgressDialog()
 
 
 class openFileDialog(QFileDialog):
@@ -99,18 +103,18 @@ class openFileDialog(QFileDialog):
         self.child.setupUi(self)
 
 class myProgressDialog:
-    global progress
-    def __init__(self):
+    global progress,num
+    def __init__(self,num):
         progress = QProgressDialog(QProgressDialog())
         progress.setWindowTitle("请稍等")
         progress.setLabelText("正在操作...")
         progress.setMinimumDuration(1)
         progress.setWindowModality(Qt.WindowModal)
-        progress.setRange(0,list.count())
+        progress.setRange(0, num)
 
-    def refreshProgress(pro):
-        if (pro < list.count()):
-            progress.setValue(pro)
+    def refreshProgress(self, pos):
+        if pos < num:
+            progress.setValue(pos)
             if progress.wasCanceled():
                 QMessageBox.warning(QProgressDialog(),"提示","操作失败")
         else:
