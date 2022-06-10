@@ -11,7 +11,8 @@ import requests
 import xlrd as xlrd
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QTableWidget, QTableWidgetItem, QProgressDialog, QMessageBox
+from PyQt5.QtWidgets import QFileDialog, QMainWindow, QTableWidget, QTableWidgetItem, QProgressDialog, QMessageBox, \
+    QDialog
 from xlrd.sheet import Sheet
 
 import filedialog
@@ -54,12 +55,23 @@ class parentWindow(QMainWindow):
         self.main_ui.setupUi(self)
         self.setWindowTitle("xls 处理")
 
-def openfile():
-        openfile_name =QFileDialog.getOpenFileNames(None, "请选择要添加的文件", "./", "Text Files (*.xls);;All Files (*)")
-        print(openfile_name)
-        return readXls(openfile_name)
 
-def networkrequest(tarlan = "en", content = "", colpos = 0):
+def openfile():
+    openfile_name = QFileDialog.getOpenFileNames(None, "请选择要添加的文件", "./", "Text Files (*.xls);;All Files (*)")
+    print(openfile_name)
+    return readXls(openfile_name)
+
+def showDialog(self):
+    progress = QProgressDialog(self)
+    progress.setWindowTitle("请稍等")
+    progress.setLabelText("正在操作...")
+    progress.setCancelButtonText("取消")
+    progress.setMinimumDuration(5)
+    progress.setWindowModality(Qt.WindowModal)
+    progress.setRange(0, len(list))
+    progress.setValue(translatenum)
+
+def networkrequest(tarlan="en", content="", colpos=0):
     # 网站地址
     url = 'https://translate.google.cn/translate_a/single?client=gtx&sl=auto&tl=' + tarlan + '&dt=t&q=' + content
     header = {'Connection': 'close'}
@@ -73,26 +85,25 @@ def networkrequest(tarlan = "en", content = "", colpos = 0):
     # print("the %s translat result is %s:", content, result)
     # tableWidget.setItem(colpos, 1, QTableWidgetItem(result))
     global translatenum
-    translatenum = translatenum+1
+    translatenum = translatenum + 1
     print(translatenum)
-    dialog.refreshProgress(translatenum)
     return result
 
 
 def translate():
-    global list,dialog
+    global list, dialog
     for i in range(table.nrows):
         inputContent = table.cell(i, 1).value
         if len(inputContent) > 0:
             list.append(i)
-            # print("inputContent = "+inputContent)
-    dialog = myProgressDialog(int(list.count()))
-    for i in range(list.count()):
+
+    for i in range(len(list)):
         inputContent = table.cell(list[i], 1).value
-        try:
-            _thread.start_new_thread(networkrequest, ("en", inputContent, i))
-        except requests.exceptions.ConnectionError:
-            print("Error: unable to start thread")
+
+        # try:
+        #     _thread.start_new_thread(networkrequest, ("en", inputContent, i))
+        # except requests.exceptions.ConnectionError:
+        #     print("Error: unable to start thread")
 
 
 
@@ -102,24 +113,30 @@ class openFileDialog(QFileDialog):
         self.child = filedialog.Ui_Dialog()
         self.child.setupUi(self)
 
-class myProgressDialog:
-    global progress,num
-    def __init__(self,num):
-        progress = QProgressDialog(QProgressDialog())
-        progress.setWindowTitle("请稍等")
-        progress.setLabelText("正在操作...")
-        progress.setMinimumDuration(1)
-        progress.setWindowModality(Qt.WindowModal)
-        progress.setRange(0, num)
 
-    def refreshProgress(self, pos):
-        if pos < num:
-            progress.setValue(pos)
-            if progress.wasCanceled():
-                QMessageBox.warning(QProgressDialog(),"提示","操作失败")
-        else:
-            progress.setValue(list.count())
-            QMessageBox.information(QProgressDialog(),"提示","操作成功")
+
+class myProgressDialog(QDialog):
+
+    def __init__(self, parent = None):
+        super(myProgressDialog,self).__init__(parent)
+        self.progress = QProgressDialog(self)
+        self.progress.setWindowTitle("请稍等")
+        self.progress.setLabelText("正在操作...")
+        self.progress.setMinimumDuration(5)
+        self.progress.setValue(0)
+        self.progress.setWindowModality(Qt.WindowModal)
+        self.progress.setRange(0, 100000000)
+        # self.progress.show()
+
+    # def refreshProgress(self, pos):
+        # if pos < 100:
+        #     if self.wasCanceled():
+        #         QMessageBox.warning(QProgressDialog(), "提示", "操作失败")
+        # else:
+        #     QMessageBox.information(QProgressDialog(), "提示", "操作成功")
+        # self.progress.setValue(pos)
+
+
 
 dialog: myProgressDialog
 
@@ -144,7 +161,6 @@ if __name__ == '__main__':
     # listb2.pack()
     # root.mainloop()
 
-
     # dialog = QtWidgets.QDialog()
     # ui = untitled.Ui_Dialog()
     # ui.setupUi(dialog)
@@ -165,7 +181,5 @@ if __name__ == '__main__':
 
     mainView.show()
     sys.exit(app.exec_())
-
-
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
