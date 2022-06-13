@@ -10,7 +10,7 @@ import requests
 
 import xlrd as xlrd
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QTableWidget, QTableWidgetItem, QProgressDialog, QMessageBox, \
     QDialog
 from xlrd.sheet import Sheet
@@ -88,6 +88,24 @@ def networkrequest(tarlan="en", content="", colpos=0):
     translatenum = translatenum + 1
     print(translatenum)
     return result
+
+class Progressthread(QThread):
+    #  通过类成员对象定义信号对象
+    _signal = pyqtSignal(int, int, int)
+
+    def __init__(self):
+        super(Progressthread, self).__init__()
+
+    def run(self):
+        task_number = 0
+        total_task_number = 9
+        progress = 0
+        lastprogress = 0
+        while(progress < 100):
+            if(progress != lastprogress):
+                self._signal.emit(progress, task_number, total_task_number)  # 发送实时任务进度和总任务进度
+                progress = translatenum / len(list) * 100
+
 
 
 def translate():
