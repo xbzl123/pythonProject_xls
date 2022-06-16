@@ -9,10 +9,11 @@ import sys
 import requests
 
 import xlrd as xlrd
+import xlwt
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QBasicTimer
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QTableWidget, QTableWidgetItem, QProgressDialog, QMessageBox, \
-    QDialog
+    QDialog, QProgressBar, QWidget
 from xlrd.sheet import Sheet
 
 import filedialog
@@ -20,16 +21,13 @@ import xls_dealwith
 
 app = QtWidgets.QApplication(sys.argv)
 tableWidget: QTableWidget
-table: Sheet
-list = []
-translatenum = 0
-
+targetlanguage = "en"
 
 def readXls(strpath=""):
+    print(strpath)
+    global workbook
     workbook = xlrd.open_workbook_xls(strpath[0][0])
-    global table
     table = workbook.sheets()[0]
-    # table0 = workbook.sheet_by_index(0)
     # 按行读取
     tableWidget.setColumnCount(table.ncols)
     tableWidget.setRowCount(table.nrows)
@@ -40,12 +38,19 @@ def readXls(strpath=""):
             if isinstance(value, float):
                 value = str(int(value))
             tableWidget.setItem(i, j, QTableWidgetItem(value))
-        # tableWidget.viewport().update()
-    # 按列读取
-    # for i in range(table.ncols):
-    #     print(table.col_values(i))
-    # print(table.cell(3, 2).value)
     return table
+
+def writeXls(strpath=""):
+    global workbook
+    savebook = xlwt.Workbook('utf-8')
+    sheet = savebook.add_sheet(workbook.sheet_names()[0])
+    oldsheet = workbook.sheets()[0]
+    for i in range(oldsheet.nrows):
+        for j in range(oldsheet.ncols):
+            sheet.write(i, j,oldsheet.cell(i, j).value)
+            print(oldsheet.cell(i, j).value)
+    print(strpath)
+    savebook.save(strpath[0])
 
 
 class parentWindow(QMainWindow):
@@ -61,68 +66,55 @@ def openfile():
     print(openfile_name)
     return readXls(openfile_name)
 
-def showDialog(self):
-    progress = QProgressDialog(self)
-    progress.setWindowTitle("请稍等")
-    progress.setLabelText("正在操作...")
-    progress.setCancelButtonText("取消")
-    progress.setMinimumDuration(5)
-    progress.setWindowModality(Qt.WindowModal)
-    progress.setRange(0, len(list))
-    progress.setValue(translatenum)
+def savefile():
+    savefile_name = QFileDialog.getSaveFileName(None, "保存文件", "./", "Text Files (*.xls);;All Files (*)")
+    print(savefile_name)
+    writeXls(savefile_name)
 
-def networkrequest(tarlan="en", content="", colpos=0):
+def networkrequest(tarlan="", tableItem=QTableWidgetItem, len = 0):
     # 网站地址
-    url = 'https://translate.google.cn/translate_a/single?client=gtx&sl=auto&tl=' + tarlan + '&dt=t&q=' + content
+    url = 'https://translate.google.cn/translate_a/single?client=gtx&sl=auto&tl=' + tarlan + '&dt=t&q=' + tableItem.text()
     header = {'Connection': 'close'}
 
     # 获取网页
-    r = requests.request('GET', url)
+    r = requests.get(url)
     # requests.adapters.DEFAULT_RETRIES = 5
     # r.encoding = r.apparent_encoding
     load = json.loads(r.text)
     result = load[0][0][0]
-    # print("the %s translat result is %s:", content, result)
-    # tableWidget.setItem(colpos, 1, QTableWidgetItem(result))
+    print("the %s translat result is %s:", tableItem.text(), result, tarlan)
+    tableWidget.setItem(tableItem.row(), tableItem.column(), QTableWidgetItem(result))
     global translatenum
     translatenum = translatenum + 1
-    print(translatenum)
+    progress = int(translatenum / len * 100)
+    # print("the translatenum is %s:", translatenum)
+    # print("the len(selectedlist) is %s:", len)
+
+    childView.timerEvent(progress)
     return result
-
-class Progressthread(QThread):
-    #  通过类成员对象定义信号对象
-    _signal = pyqtSignal(int, int, int)
-
-    def __init__(self):
-        super(Progressthread, self).__init__()
-
-    def run(self):
-        task_number = 0
-        total_task_number = 9
-        progress = 0
-        lastprogress = 0
-        while(progress < 100):
-            if(progress != lastprogress):
-                self._signal.emit(progress, task_number, total_task_number)  # 发送实时任务进度和总任务进度
-                progress = translatenum / len(list) * 100
-
 
 
 def translate():
-    global list, dialog
-    for i in range(table.nrows):
-        inputContent = table.cell(i, 1).value
+    global translatenum
+    translatenum = 0
+    global childView
+    selectedlist = []
+    childView = ProgressBar()
+
+    for i in range(len(tableWidget.selectedItems())):
+        selectedlist.append(tableWidget.selectedItems()[i])
+
+    print("size = %d", len(selectedlist))
+    translatelist = []
+    for i in range(len(selectedlist)):
+        inputContent = selectedlist[i].text()
         if len(inputContent) > 0:
-            list.append(i)
-
-    for i in range(len(list)):
-        inputContent = table.cell(list[i], 1).value
-
-        # try:
-        #     _thread.start_new_thread(networkrequest, ("en", inputContent, i))
-        # except requests.exceptions.ConnectionError:
-        #     print("Error: unable to start thread")
-
+            translatelist.append(selectedlist[i])
+    for i in range(len(translatelist)):
+        try:
+            _thread.start_new_thread(networkrequest, (targetlanguage, translatelist[i], len(translatelist)))
+        except requests.exceptions.ConnectionError:
+            print("Error: unable to start thread")
 
 
 class openFileDialog(QFileDialog):
@@ -131,32 +123,45 @@ class openFileDialog(QFileDialog):
         self.child = filedialog.Ui_Dialog()
         self.child.setupUi(self)
 
+def selecttargetlanguage(lan = ""):
+    global targetlanguage
+    targetlanguage = lan
+    print('targetlanguage %s', targetlanguage)
 
 
-class myProgressDialog(QDialog):
+class ProgressBar(QWidget):
 
-    def __init__(self, parent = None):
-        super(myProgressDialog,self).__init__(parent)
-        self.progress = QProgressDialog(self)
-        self.progress.setWindowTitle("请稍等")
-        self.progress.setLabelText("正在操作...")
-        self.progress.setMinimumDuration(5)
-        self.progress.setValue(0)
-        self.progress.setWindowModality(Qt.WindowModal)
-        self.progress.setRange(0, 100000000)
-        # self.progress.show()
+    def __init__(self):
+        super().__init__()
 
-    # def refreshProgress(self, pos):
-        # if pos < 100:
-        #     if self.wasCanceled():
-        #         QMessageBox.warning(QProgressDialog(), "提示", "操作失败")
-        # else:
-        #     QMessageBox.information(QProgressDialog(), "提示", "操作成功")
-        # self.progress.setValue(pos)
+        self.initUI()
+
+    def initUI(self):
+
+        self.pbar = QProgressBar(self)
+        self.pbar.setGeometry(80, 20, 300, 30)
+
+        self.timer = QBasicTimer()
+        self.step = 0
+
+        self.setGeometry(650, 500, 420, 70)
+        self.setWindowTitle('The Progress of Translate')
+        self.show()
+
+    def timerEvent(self, e):
+        if e != self.step-1:
+            self.step = e+1
+            print("self.step = %s", self.step)
+            self.pbar.setValue(self.step)
+
+        if self.step >= 100:
+            self.timer.stop()
+            self.close()
+            tableWidget.viewport().update()
+            return
 
 
 
-dialog: myProgressDialog
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -167,16 +172,16 @@ if __name__ == '__main__':
     # # 创建两个列表
     # li = ['C', 'python', 'php', 'html', 'SQL', 'java']
     # movie = ['CSS', 'jQuery', 'Bootstrap']
-    # listb = tkinter.Listbox(root)  # 创建两个列表组件
-    # listb2 = tkinter.Listbox(root)
+    # selectedlistb = tkinter.selectedlistbox(root)  # 创建两个列表组件
+    # selectedlistb2 = tkinter.selectedlistbox(root)
     # for item in li:  # 第一个小部件插入数据
-    #     listb.insert(0, item)
+    #     selectedlistb.insert(0, item)
     #
     # for item in movie:  # 第二个小部件插入数据
-    #     listb2.insert(0, item)
+    #     selectedlistb2.insert(0, item)
     #
-    # listb.pack()  # 将小部件放置到主窗口中
-    # listb2.pack()
+    # selectedlistb.pack()  # 将小部件放置到主窗口中
+    # selectedlistb2.pack()
     # root.mainloop()
 
     # dialog = QtWidgets.QDialog()
@@ -196,6 +201,15 @@ if __name__ == '__main__':
     tableWidget = mainView.main_ui.tableWidget
     mainView.main_ui.openFile.clicked.connect(openfile)
     mainView.main_ui.translate.clicked.connect(translate)
+    mainView.main_ui.saveFile.clicked.connect(savefile)
+
+    mainView.main_ui.toChina.clicked.connect(lambda: selecttargetlanguage("zh"))
+    mainView.main_ui.toJapan.clicked.connect(lambda: selecttargetlanguage("ja"))
+    mainView.main_ui.toEnglish.clicked.connect(lambda: selecttargetlanguage("en"))
+    mainView.main_ui.toKorean.clicked.connect(lambda: selecttargetlanguage("ko"))
+    mainView.main_ui.toGerman.clicked.connect(lambda: selecttargetlanguage("de"))
+    mainView.main_ui.toFrench.clicked.connect(lambda: selecttargetlanguage("fr"))
+
 
     mainView.show()
     sys.exit(app.exec_())

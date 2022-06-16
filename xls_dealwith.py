@@ -42,6 +42,15 @@ class Ui_MainWindow(object):
         self.toJapan = QtWidgets.QRadioButton(self.centralwidget)
         self.toJapan.setObjectName("toJapan")
         self.horizontalLayout.addWidget(self.toJapan)
+
+        self.toGerman = QtWidgets.QRadioButton(self.centralwidget)
+        self.toGerman.setObjectName("toGerman")
+        self.horizontalLayout.addWidget(self.toGerman)
+
+        self.toKorean = QtWidgets.QRadioButton(self.centralwidget)
+        self.toKorean.setObjectName("toKorean")
+        self.horizontalLayout.addWidget(self.toKorean)
+
         self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
         self.tableWidget = QtWidgets.QTableWidget(self.centralwidget)
         self.tableWidget.setObjectName("tableWidget")
@@ -71,3 +80,7 @@ class Ui_MainWindow(object):
         self.toEnglish.setText(_translate("MainWindow", "英文"))
         self.toFrench.setText(_translate("MainWindow", "法语"))
         self.toJapan.setText(_translate("MainWindow", "日语"))
+        self.toGerman.setText(_translate("MainWindow", "德语"))
+        self.toKorean.setText(_translate("MainWindow", "韩语"))
+
+

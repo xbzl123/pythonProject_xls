@@ -21,15 +21,15 @@ class Runthread(QThread):
     def run(self):
         task_number = 0
         total_task_number = 9
-        # for i in range(100):
+        for i in range(100):
         #     ##########################
         #     #                        #
         #     # 将需要计算的代码块放在此处#
         #     #                        #
         #     ##########################
         #
-        #     time.sleep(0.1)
-        self._signal.emit(num + 1, task_number, total_task_number)  # 发送实时任务进度和总任务进度
+            time.sleep(0.1)
+            self._signal.emit(i + 1, task_number, total_task_number)  # 发送实时任务进度和总任务进度
 
 
 class ProcessBar(QtWidgets.QWidget):
