@@ -30,6 +30,7 @@ class Ui_MainWindow(object):
         self.translate = QtWidgets.QPushButton(self.centralwidget)
         self.translate.setObjectName("translate")
         self.horizontalLayout.addWidget(self.translate)
+
         self.toChina = QtWidgets.QRadioButton(self.centralwidget)
         self.toChina.setObjectName("toChina")
         self.horizontalLayout.addWidget(self.toChina)
@@ -52,12 +53,55 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.toKorean)
 
         self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
+
+
+        self.toXmlLayout = QtWidgets.QHBoxLayout()
+        self.toXmlLayout.setObjectName("toXmlLayout")
+        self.toXml = QtWidgets.QPushButton(self.centralwidget)
+        self.toXml.setObjectName("toXml")
+        self.toXmlLayout.addWidget(self.toXml)
+
+        self.keyLabel = QtWidgets.QLabel(self.centralwidget)
+        self.keyLabel.setObjectName("keyLabel")
+        self.toXmlLayout.addWidget(self.keyLabel)
+
+        self.keyEdit = QtWidgets.QLineEdit()
+        self.keyEdit.setObjectName("keyEdit")
+        self.keyEdit.setText("1")
+        self.toXmlLayout.addWidget(self.keyEdit)
+
+        self.valueLabel = QtWidgets.QLabel(self.centralwidget)
+        self.valueLabel.setObjectName("valueLabel")
+        self.toXmlLayout.addWidget(self.valueLabel)
+
+        self.valueEdit = QtWidgets.QLineEdit(self.centralwidget)
+        self.valueEdit.setObjectName("valueEdit")
+        self.valueEdit.setText("2")
+        self.toXmlLayout.addWidget(self.valueEdit)
+
+
+        self.itemLabel = QtWidgets.QLabel(self.centralwidget)
+        self.itemLabel.setObjectName("itemLabel")
+        self.toXmlLayout.addWidget(self.itemLabel)
+
+        self.itemEdit = QtWidgets.QLineEdit(self.centralwidget)
+        self.itemEdit.setObjectName("itemEdit")
+        self.itemEdit.setText("string")
+        self.toXmlLayout.addWidget(self.itemEdit)
+
+
+        self.includeHeader = QtWidgets.QCheckBox(self.centralwidget)
+        self.includeHeader.setObjectName("includeHeader")
+        self.toXmlLayout.addWidget(self.includeHeader)
+
+        self.gridLayout.addLayout(self.toXmlLayout, 1, 0, 1, 1)
+
         self.tableWidget = QtWidgets.QTableWidget(self.centralwidget)
         self.tableWidget.setObjectName("tableWidget")
         self.tableWidget.setColumnCount(0)
         self.tableWidget.setRowCount(0)
         self.tableWidget.verticalHeader().setStretchLastSection(True)
-        self.gridLayout.addWidget(self.tableWidget, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.tableWidget, 2, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 640, 23))
@@ -82,5 +126,12 @@ class Ui_MainWindow(object):
         self.toJapan.setText(_translate("MainWindow", "日语"))
         self.toGerman.setText(_translate("MainWindow", "德语"))
         self.toKorean.setText(_translate("MainWindow", "韩语"))
+        self.toXml.setText(_translate("MainWindow", "toXml"))
+        self.keyLabel.setText(_translate("MainWindow", "keyColunm:"))
+        self.valueLabel.setText(_translate("MainWindow", "valueColunm:"))
+        self.itemLabel.setText(_translate("MainWindow", "item:"))
+        self.includeHeader.setText(_translate("MainWindow", "包含首行？"))
+
+
 
 

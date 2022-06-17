@@ -6,6 +6,7 @@ import _thread
 import json
 import sys
 
+import Document
 import requests
 
 import xlrd as xlrd
@@ -14,7 +15,6 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QBasicTimer
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QTableWidget, QTableWidgetItem, QProgressDialog, QMessageBox, \
     QDialog, QProgressBar, QWidget
-from xlrd.sheet import Sheet
 
 import filedialog
 import xls_dealwith
@@ -22,6 +22,7 @@ import xls_dealwith
 app = QtWidgets.QApplication(sys.argv)
 tableWidget: QTableWidget
 targetlanguage = "en"
+workbook = None
 
 def readXls(strpath=""):
     print(strpath)
@@ -160,7 +161,31 @@ class ProgressBar(QWidget):
             tableWidget.viewport().update()
             return
 
+def convertxls():
+    if workbook is None:
+        QMessageBox.about(QDialog(), "Notice", "please open a file frist!")
+    else:
+        sheets_ = workbook.sheets()[0]
+        contentxls = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
+        # eg:  <string name="authentication_title">Two-factor Authentication</string>
+        if mainView.main_ui.includeHeader.isChecked():
+            for i in range(sheets_.nrows):
+                if sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value is not None:
+                    contentxls += '\t<string name="'+ str(sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value) + '">' \
+                                  + str(sheets_.cell(i, int(mainView.main_ui.valueEdit.text()) - 1).value)+'</string>\n'
+        else:
+            for i in range(sheets_.nrows):
+                if sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value is not None and i > 0:
+                    contentxls += '\t<string name="'+ str(sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value) + '">' \
+                                  + str(sheets_.cell(i, int(mainView.main_ui.valueEdit.text()) - 1).value)+'</string>\n'
+        contentxls +='</resources>'
+        print(contentxls)
 
+        savefile_name = QFileDialog.getSaveFileName(None, "保存文件", "./", "Text Files (*.xml);;All Files (*)")
+        if len(savefile_name[0]) > 0:
+            savexml = open(savefile_name[0], 'w', encoding="utf-8")
+            savexml.write(contentxls)
+            savexml.close()
 
 
 # Press the green button in the gutter to run the script.
@@ -194,6 +219,7 @@ if __name__ == '__main__':
     # mainView.showMaximized()
     # sys.exit(app.exec_())
 
+    # Document.documentOperation("te.txt")
     mainView = parentWindow()
 
     # childView = openFileDialog()
@@ -209,6 +235,8 @@ if __name__ == '__main__':
     mainView.main_ui.toKorean.clicked.connect(lambda: selecttargetlanguage("ko"))
     mainView.main_ui.toGerman.clicked.connect(lambda: selecttargetlanguage("de"))
     mainView.main_ui.toFrench.clicked.connect(lambda: selecttargetlanguage("fr"))
+
+    mainView.main_ui.toXml.clicked.connect(convertxls)
 
 
     mainView.show()
