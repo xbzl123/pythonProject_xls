@@ -4,9 +4,11 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import _thread
 import json
+import random
 import sys
+import time
+from lxml import etree
 
-import Document
 import requests
 
 import xlrd as xlrd
@@ -72,30 +74,52 @@ def savefile():
     print(savefile_name)
     writeXls(savefile_name)
 
-def networkrequest(tarlan="", tableItem=QTableWidgetItem, len = 0):
-    # 网站地址
-    url = 'https://translate.google.cn/translate_a/single?client=gtx&sl=auto&tl=' + tarlan + '&dt=t&q=' + tableItem.text()
-    header = {'Connection': 'close'}
-
-    # 获取网页
-    r = requests.get(url)
-    # requests.adapters.DEFAULT_RETRIES = 5
-    # r.encoding = r.apparent_encoding
-    load = json.loads(r.text)
-    result = load[0][0][0]
-    print("the %s translat result is %s:", tableItem.text(), result, tarlan)
-    tableWidget.setItem(tableItem.row(), tableItem.column(), QTableWidgetItem(result))
-    global translatenum
-    translatenum = translatenum + 1
-    progress = int(translatenum / len * 100)
-    # print("the translatenum is %s:", translatenum)
-    # print("the len(selectedlist) is %s:", len)
-
-    childView.timerEvent(progress)
-    return result
+def getProxyAddress():
+        # 网站地址
+        url = 'https://proxy.seofangfa.com/'
+        head = {  # 模拟浏览器头部信息，向豆瓣服务器发送消息
+            "User-Agent": "Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 80.0.3987.122  Safari / 537.36"
+        }
+        r = requests.get(url, headers=head)
+        dom = etree.HTML(r.text)
+        url_path = '//td'
+        urls = dom.xpath(url_path)
+        ipaddress = 'http://'+ urls[0].text + ':' + urls[1].text
+        print("the len(selectedlist) is %s:",ipaddress)
+        return ipaddress
 
 
+
+def networkrequest(tarlan="", tableItem=QTableWidgetItem, len = 0,proxie = ""):
+    try:
+        # 网站地址
+        url = 'https://translate.google.cn/translate_a/single?client=gtx&sl=auto&tl=' + tarlan + '&dt=t&q=' + tableItem.text()
+        head = {  # 模拟浏览器头部信息，向豆瓣服务器发送消息
+            "User-Agent": "Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 80.0.3987.122  Safari / 537.36"
+        }
+        # 用户代理，表示告诉豆瓣服务器，我们是什么类型的机器、浏览器（本质上是告诉浏览器，我们可以接收什么水平的文件内容）
+        proxies = {'http': proxie}
+        # 获取网页
+        r = requests.get(url, headers=head, proxies=proxies)
+
+        load = json.loads(r.text)
+        result = load[0][0][0]
+        print("the %s translat result is %s:", tableItem.text(), result)
+        tableWidget.setItem(tableItem.row(), tableItem.column(), QTableWidgetItem(result))
+        global translatenum
+        translatenum = translatenum + 1
+        progress = int(translatenum / len * 100)
+        # print("the translatenum is %s:", translatenum)
+        # print("the len(selectedlist) is %s:", len)
+        childView.timerEvent(progress)
+    except requests.exceptions.ConnectionError:
+        print("Error: unable to start thread")
+
+
+#翻译选中的单元格的内容为指定语言
 def translate():
+    proxie = getProxyAddress()
+
     global translatenum
     translatenum = 0
     global childView
@@ -111,11 +135,13 @@ def translate():
         inputContent = selectedlist[i].text()
         if len(inputContent) > 0:
             translatelist.append(selectedlist[i])
+
+
+
+    #多线程调用网络接口翻译
     for i in range(len(translatelist)):
-        try:
-            _thread.start_new_thread(networkrequest, (targetlanguage, translatelist[i], len(translatelist)))
-        except requests.exceptions.ConnectionError:
-            print("Error: unable to start thread")
+        _thread.start_new_thread(networkrequest, (targetlanguage, translatelist[i], len(translatelist)), proxie)
+        time.sleep(0.1)
 
 
 class openFileDialog(QFileDialog):
@@ -163,7 +189,7 @@ class ProgressBar(QWidget):
 
 def convertxls():
     if workbook is None:
-        QMessageBox.about(QDialog(), "Notice", "please open a file frist!")
+        QMessageBox.about(QDialog(), "Notice", "please open a xls file frist!")
     else:
         sheets_ = workbook.sheets()[0]
         contentxls = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
@@ -190,39 +216,7 @@ def convertxls():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    # root = tkinter.Tk()
-    # root.title("test demo")
-    # # root.geometry("200x500")
-    # # 创建窗口对象的背景色
-    # # 创建两个列表
-    # li = ['C', 'python', 'php', 'html', 'SQL', 'java']
-    # movie = ['CSS', 'jQuery', 'Bootstrap']
-    # selectedlistb = tkinter.selectedlistbox(root)  # 创建两个列表组件
-    # selectedlistb2 = tkinter.selectedlistbox(root)
-    # for item in li:  # 第一个小部件插入数据
-    #     selectedlistb.insert(0, item)
-    #
-    # for item in movie:  # 第二个小部件插入数据
-    #     selectedlistb2.insert(0, item)
-    #
-    # selectedlistb.pack()  # 将小部件放置到主窗口中
-    # selectedlistb2.pack()
-    # root.mainloop()
-
-    # dialog = QtWidgets.QDialog()
-    # ui = untitled.Ui_Dialog()
-    # ui.setupUi(dialog)
-    # dialog.show()
-
-    # mainView = QtWidgets.QMainWindow()
-    # mainView.setWindowTitle("xls 处理")
-    # mainView.showMaximized()
-    # sys.exit(app.exec_())
-
-    # Document.documentOperation("te.txt")
     mainView = parentWindow()
-
-    # childView = openFileDialog()
 
     tableWidget = mainView.main_ui.tableWidget
     mainView.main_ui.openFile.clicked.connect(openfile)
