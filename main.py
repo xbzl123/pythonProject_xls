@@ -4,8 +4,8 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import _thread
 import json
-import random
 import sys
+import threading
 import time
 from lxml import etree
 
@@ -14,13 +14,12 @@ import requests
 import xlrd as xlrd
 import xlwt
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QBasicTimer
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QBasicTimer, QObject
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QTableWidget, QTableWidgetItem, QProgressDialog, QMessageBox, \
-    QDialog, QProgressBar, QWidget
+    QDialog, QProgressBar, QWidget, QApplication
 
 import filedialog
 import xls_dealwith
-
 app = QtWidgets.QApplication(sys.argv)
 tableWidget: QTableWidget
 targetlanguage = "en"
@@ -29,6 +28,8 @@ workbook = None
 def readXls(strpath=""):
     print(strpath)
     global workbook
+    if strpath[1] == "":
+        return
     workbook = xlrd.open_workbook_xls(strpath[0][0])
     table = workbook.sheets()[0]
     # 按行读取
@@ -64,7 +65,9 @@ class parentWindow(QMainWindow):
         self.setWindowTitle("xls 处理")
 
 
+proxie = ""
 def openfile():
+    getProxyAddress()
     openfile_name = QFileDialog.getOpenFileNames(None, "请选择要添加的文件", "./", "Text Files (*.xls);;All Files (*)")
     print(openfile_name)
     return readXls(openfile_name)
@@ -73,6 +76,18 @@ def savefile():
     savefile_name = QFileDialog.getSaveFileName(None, "保存文件", "./", "Text Files (*.xls);;All Files (*)")
     print(savefile_name)
     writeXls(savefile_name)
+
+class MyThread(threading.Thread):
+    #  通过类成员对象定义信号对象
+    _signal = pyqtSignal(int, int, int)
+
+    def __init__(self):
+        threading.Thread.__init__(self)
+    def run(self):
+        for i in range(100):
+            self._signal.emit(i)  # 发送实时任务进度和总任务进度
+            time.sleep(0.1)
+
 
 def getProxyAddress():
         # 网站地址
@@ -84,47 +99,58 @@ def getProxyAddress():
         dom = etree.HTML(r.text)
         url_path = '//td'
         urls = dom.xpath(url_path)
-        ipaddress = 'http://'+ urls[0].text + ':' + urls[1].text
-        print("the len(selectedlist) is %s:",ipaddress)
-        return ipaddress
+        global proxie
+        proxie = 'http://'+ urls[0].text + ':' + urls[1].text
+        print("the len(selectedlist) is %s:", proxie)
+
+def pbar_change(progress):
+    global so
+    so.progress_update.emit(progress)
 
 
+def networkrequest(tarlan="", translatelist=[], proxie =""):
+    for i in range(len(translatelist)):
+        try:
+            # 网站地址
+            url = 'https://translate.google.cn/translate_a/single?client=gtx&sl=auto&tl=' + tarlan + '&dt=t&q=' + translatelist[i].text()
+            head = {  # 模拟浏览器头部信息，向豆瓣服务器发送消息
+                "User-Agent": "Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 80.0.3987.122  Safari / 537.36"
+            }
+            # 用户代理，表示告诉豆瓣服务器，我们是什么类型的机器、浏览器（本质上是告诉浏览器，我们可以接收什么水平的文件内容）
+            proxies = {'http': proxie}
+            # 获取网页
+            r = requests.get(url, headers=head, proxies=proxies)
 
-def networkrequest(tarlan="", tableItem=QTableWidgetItem, len = 0,proxie = ""):
-    try:
-        # 网站地址
-        url = 'https://translate.google.cn/translate_a/single?client=gtx&sl=auto&tl=' + tarlan + '&dt=t&q=' + tableItem.text()
-        head = {  # 模拟浏览器头部信息，向豆瓣服务器发送消息
-            "User-Agent": "Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 80.0.3987.122  Safari / 537.36"
-        }
-        # 用户代理，表示告诉豆瓣服务器，我们是什么类型的机器、浏览器（本质上是告诉浏览器，我们可以接收什么水平的文件内容）
-        proxies = {'http': proxie}
-        # 获取网页
-        r = requests.get(url, headers=head, proxies=proxies)
-
-        load = json.loads(r.text)
-        result = load[0][0][0]
-        print("the %s translat result is %s:", tableItem.text(), result)
-        tableWidget.setItem(tableItem.row(), tableItem.column(), QTableWidgetItem(result))
-        global translatenum
-        translatenum = translatenum + 1
-        progress = int(translatenum / len * 100)
-        # print("the translatenum is %s:", translatenum)
-        # print("the len(selectedlist) is %s:", len)
-        childView.timerEvent(progress)
-    except requests.exceptions.ConnectionError:
-        print("Error: unable to start thread")
-
+            load = json.loads(r.text)
+            result = load[0][0][0]
+            print("the %s translat result is %s:", translatelist[i].text(), result)
+            tableWidget.setItem(translatelist[i].row(), translatelist[i].column(), QTableWidgetItem(result))
+            global translatenum,so
+            translatenum = translatenum + 1
+            progress = int(translatenum / len(translatelist) * 100)
+            print("the progress is %s:", progress)
+            # childView.setProgress(progress)
+            worker = threading.Thread(target=pbar_change(progress))
+            worker.start()
+        except requests.exceptions.ConnectionError:
+            print("Error: unable to start thread")
+        time.sleep(0.05)
 
 #翻译选中的单元格的内容为指定语言
 def translate():
-    proxie = getProxyAddress()
 
     global translatenum
     translatenum = 0
     global childView
     selectedlist = []
-    childView = ProgressBar()
+    if workbook == None:
+        QMessageBox.about(QDialog(), "Notice", "please open a xls file frist!")
+        return
+    elif len(tableWidget.selectedItems()) < 1:
+        QMessageBox.about(QDialog(), "Notice", "please select data to translate!")
+        return
+
+
 
     for i in range(len(tableWidget.selectedItems())):
         selectedlist.append(tableWidget.selectedItems()[i])
@@ -135,14 +161,13 @@ def translate():
         inputContent = selectedlist[i].text()
         if len(inputContent) > 0:
             translatelist.append(selectedlist[i])
+    # 实例化
+    global so
+    so = SignalStore()
+    childView = ProgressBar()
 
-
-
-    #多线程调用网络接口翻译
-    for i in range(len(translatelist)):
-        _thread.start_new_thread(networkrequest, (targetlanguage, translatelist[i], len(translatelist)), proxie)
-        time.sleep(0.1)
-
+    # #多线程调用网络接口翻译
+    _thread.start_new_thread(networkrequest, (targetlanguage, translatelist, proxie))
 
 class openFileDialog(QFileDialog):
     def __init__(self):
@@ -156,34 +181,43 @@ def selecttargetlanguage(lan = ""):
     print('targetlanguage %s', targetlanguage)
 
 
+# 信号库
+class SignalStore(QObject):
+    # 定义一种信号
+    progress_update = pyqtSignal(int)
+    # 还可以定义其他作用的信号
+
+
 class ProgressBar(QWidget):
 
     def __init__(self):
         super().__init__()
-
         self.initUI()
 
     def initUI(self):
-
+        global so
+        so.progress_update.connect(self.setProgress)
         self.pbar = QProgressBar(self)
         self.pbar.setGeometry(80, 20, 300, 30)
 
         self.timer = QBasicTimer()
         self.step = 0
-
+        # 窗口初始化
         self.setGeometry(650, 500, 420, 70)
         self.setWindowTitle('The Progress of Translate')
         self.show()
 
-    def timerEvent(self, e):
-        if e != self.step-1:
-            self.step = e+1
-            print("self.step = %s", self.step)
-            self.pbar.setValue(self.step)
+    def setProgress(self, e):
+        if self.step == e:
+            return
+        print("e= %s", e)
+        self.pbar.setValue(e)
+        self.step = e
 
-        if self.step >= 100:
-            self.timer.stop()
+        if e >= 100:
             self.close()
+            # global progress
+            # progress = 0
             tableWidget.viewport().update()
             return
 

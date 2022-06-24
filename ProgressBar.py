@@ -58,6 +58,7 @@ class ProcessBar(QtWidgets.QWidget):
         self.setWindowTitle('正在处理中')
         self.show()
         # self.work = None  # 初始化线程
+        
 
     def call_backlog(self, msg, task_number, total_task_number):
         if task_number == 0 and total_task_number == 0:

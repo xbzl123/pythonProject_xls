@@ -36,6 +36,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.toChina)
         self.toEnglish = QtWidgets.QRadioButton(self.centralwidget)
         self.toEnglish.setObjectName("toEnglish")
+        self.toEnglish.setChecked(True)
         self.horizontalLayout.addWidget(self.toEnglish)
         self.toFrench = QtWidgets.QRadioButton(self.centralwidget)
         self.toFrench.setObjectName("toFrench")
