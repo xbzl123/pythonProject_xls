@@ -25,7 +25,7 @@ app = QtWidgets.QApplication(sys.argv)
 tableWidget: QTableWidget
 targetlanguage = "en"
 workbook = None
-
+translatenum = 0
 
 def readXls(strpath=""):
     print(strpath)
@@ -133,11 +133,14 @@ def getproxyaddress():
         except Exception as e:
             print('start thread :' + e.args[0])
         finally:
-            while True:
-                if checkactivedipnum == len(proxies):
-                    starttranslate(activedproxies)
-                    break
-                    print('结束IP检测'+str(len(proxies)))
+            if len(activedproxies) > 0:
+                while True:
+                    if checkactivedipnum == len(proxies):
+                        starttranslate(activedproxies,True)
+                        print('结束IP检测'+str(len(proxies)))
+                        break
+            else:
+                starttranslate(activedproxies, False)
 
 
 # 筛选有效的代理IP
@@ -165,11 +168,71 @@ def pbar_change(progress):
     global so
     so.progress_update.emit(progress)
 
+class TranslateItem:
+    def __init__(self, pos=0, content=[]):
+        self.pos = pos
+        self.content = content
+
 #并发任务进行翻译
+def multinetworktranslate(targetlanguage="", translatelist=[]):
+    num = len(activedproxies)
+    #转整形列表
+    totalpos = []
+    for i in range(len(translatelist)):
+        totalpos.append(i)
+
+    temp = []
+    for i in range(num):
+        data = []
+        for j in range(len(totalpos)):
+            if totalpos[j]%num == i:
+                data.append(totalpos[j])
+        threads = TranslateItem(i, data)
+        temp.append(threads)
+
+    print('temp的长度:' + str(temp[0].content))
+
+    for i in range(num):
+        _thread.start_new_thread(networktranslatesingle, (targetlanguage, translatelist, temp[i].content, activedproxies[i]))
+
+
+
+def networktranslatesingle(tarlan="", translatelist=[], translatescope = [], proxy = ""):
+    print("00the length is %s:", activedproxies)
+    for i in range(len(translatelist)):
+        if i in translatescope:
+            # print('i的值:%s'+ str(i))
+            try:
+                # 网站地址
+                url = 'https://translate.google.hk/translate_a/single?client=gtx&sl=auto&tl=' + tarlan + '&dt=t&q=' + translatelist[i].text()
+                head = {  # 模拟浏览器头部信息，向豆瓣服务器发送消息
+                    "User-Agent": "Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 80.0.3987.122  Safari / 537.36"
+                }
+                # 用户代理，表示告诉豆瓣服务器，我们是什么类型的机器、浏览器（本质上是告诉浏览器，我们可以接收什么水平的文件内容）
+                proxieswrap = {'http': proxy}
+
+                # 获取网页
+                r = requests.get(url, headers=head, proxies=proxieswrap)
+                if r.status_code == 200:
+                    load = json.loads(r.text)
+                    result = load[0][0][0]
+                    print("the %s translat result is %s:", translatelist[i].text(), result)
+                    tableWidget.setItem(translatelist[i].row(), translatelist[i].column(), QTableWidgetItem(result))
+                    global translatenum, so
+                    translatenum = translatenum + 1
+                    progress = int(translatenum / len(translatelist) * 100)
+                    # childView.setProgress(progress)
+                    worker = threading.Thread(target=pbar_change(progress))
+                    worker.start()
+                else:
+                    QMessageBox.about(QDialog(), "Notice", r.text)
+            except requests.exceptions.ConnectionError:
+                print("Error: unable to start thread")
+            time.sleep(0.05)
 
 
 #串联任务进行翻译
-def networkrequest(tarlan="", translatelist=[], proxies=[]):
+def networkrequest(tarlan="", translatelist=[], proxies=""):
     for i in range(len(translatelist)):
         try:
             # 网站地址
@@ -179,7 +242,7 @@ def networkrequest(tarlan="", translatelist=[], proxies=[]):
                 "User-Agent": "Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 80.0.3987.122  Safari / 537.36"
             }
             # 用户代理，表示告诉豆瓣服务器，我们是什么类型的机器、浏览器（本质上是告诉浏览器，我们可以接收什么水平的文件内容）
-            proxieswrap = {'http': proxies[0]}
+            proxieswrap = {'http': proxies}
             # 获取网页
             r = requests.get(url, headers=head, proxies=proxieswrap)
             if r.status_code == 200:
@@ -206,7 +269,7 @@ def translate():
     getproxyaddress()
 
 
-def starttranslate(proxies):
+def starttranslate(proxies,isMulti = False):
     global translatenum
     translatenum = 0
     global childView
@@ -233,7 +296,10 @@ def starttranslate(proxies):
     childView = ProgressBar()
 
     # 多线程调用网络接口翻译
-    _thread.start_new_thread(networkrequest, (targetlanguage, translatelist, proxies))
+    if isMulti:
+        multinetworktranslate(targetlanguage, translatelist)
+    else:
+        _thread.start_new_thread(networkrequest, (targetlanguage, translatelist, ""))
 
 
 class openFileDialog(QFileDialog):
