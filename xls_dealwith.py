@@ -50,6 +50,15 @@ class Ui_MainWindow(object):
         self.lgLabel.setObjectName("lgLabel")
         self.horizontalLayout.addWidget(self.lgLabel)
 
+        self.toChina = QtWidgets.QRadioButton(self.centralwidget)
+        self.toChina.setObjectName("toChina")
+        self.horizontalLayout.addWidget(self.toChina)
+
+        self.toEnglish = QtWidgets.QRadioButton(self.centralwidget)
+        self.toEnglish.setObjectName("toEnglish")
+        self.toEnglish.setChecked(True)
+        self.horizontalLayout.addWidget(self.toEnglish)
+
         self.toAllLanguage = QtWidgets.QRadioButton(self.centralwidget)
         self.toAllLanguage.setObjectName("toAllLanguage")
         self.horizontalLayout.addWidget(self.toAllLanguage)
@@ -114,6 +123,8 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
 
         self.toAllLanguage.clicked.connect(self.swithNotSimple)
+        self.toChina.clicked.connect(self.swithNotSimple)
+        self.toEnglish.clicked.connect(self.swithNotSimple)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -123,6 +134,8 @@ class Ui_MainWindow(object):
         self.saveFile.setText(_translate("MainWindow", "保存"))
         self.translate.setText(_translate("MainWindow", "翻译成"))
 
+        self.toChina.setText(_translate("MainWindow", "百度翻译"))
+        self.toEnglish.setText(_translate("MainWindow", "谷歌翻译"))
         self.toAllLanguage.setText(_translate("MainWindow", "全部语言"))
         self.toXml.setText(_translate("MainWindow", "toXml"))
         self.keyLabel.setText(_translate("MainWindow", "keyColunm:"))
@@ -135,7 +148,7 @@ class Ui_MainWindow(object):
     def swithNotSimple(self):
         self.comboBox.clear()
         list = []
-        self.data = readLanguageJson(self.toAllLanguage.isChecked())
+        self.data = readLanguageJson(self.toAllLanguage.isChecked(),self.toChina.isChecked())
         for i in range(len(self.data)):
             list.append(self.data[i]['DisplayName'])
         qCompleter1 = QCompleter(list)  # 列表填充
