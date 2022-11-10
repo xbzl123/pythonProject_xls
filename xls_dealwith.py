@@ -10,8 +10,9 @@ import json
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QCompleter
+from PyQt5.QtWidgets import QCompleter, QMessageBox, QDialog
 
+from MyDialogBox import MyDailogBox
 from jsonReader import readLanguageJson
 
 
@@ -147,8 +148,11 @@ class Ui_MainWindow(object):
 
     def swithNotSimple(self):
         self.comboBox.clear()
+        if self.toChina.isChecked():
+            box = MyDailogBox()
+            box.information(box.mw, '注意', '百度翻译容易超时只能支持单线程翻译，所需时间可能比较长。')
         list = []
-        self.data = readLanguageJson(self.toAllLanguage.isChecked(),self.toChina.isChecked())
+        self.data = readLanguageJson(self.toAllLanguage.isChecked(), self.toChina.isChecked())
         for i in range(len(self.data)):
             list.append(self.data[i]['DisplayName'])
         qCompleter1 = QCompleter(list)  # 列表填充
