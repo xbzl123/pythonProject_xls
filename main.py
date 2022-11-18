@@ -34,6 +34,14 @@ translateNum = 0
 ActiveProxies = []
 checkActiveIpNum = 0
 
+def revokeTranslate():
+    selected_items = tableWidget.selectedItems()
+    global workbook
+    table = workbook.sheets()[0]
+    for i in range(len(selected_items)):
+        item = selected_items[i]
+        item.setText(table.cell(item.row(), item.column()).value)
+
 
 def readXls(strpath=""):
     # print(strpath)
@@ -418,6 +426,7 @@ if __name__ == '__main__':
     mainView.main_ui.translate.clicked.connect(translate)
     mainView.main_ui.saveFile.clicked.connect(savefile)
     mainView.main_ui.toXml.clicked.connect(convertxls)
+    mainView.main_ui.revoke.clicked.connect(revokeTranslate)
     mainView.show()
     sys.exit(app.exec_())
 

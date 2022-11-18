@@ -35,6 +35,11 @@ class Ui_MainWindow(object):
         self.saveFile = QtWidgets.QPushButton(self.centralwidget)
         self.saveFile.setObjectName("saveFile")
         self.horizontalLayout.addWidget(self.saveFile)
+
+        self.revoke = QtWidgets.QPushButton(self.centralwidget)
+        self.revoke.setObjectName("revoke")
+        self.horizontalLayout.addWidget(self.revoke)
+
         self.translate = QtWidgets.QPushButton(self.centralwidget)
         self.translate.setObjectName("translate")
         self.horizontalLayout.addWidget(self.translate)
@@ -63,9 +68,7 @@ class Ui_MainWindow(object):
         self.toAllLanguage = QtWidgets.QRadioButton(self.centralwidget)
         self.toAllLanguage.setObjectName("toAllLanguage")
         self.horizontalLayout.addWidget(self.toAllLanguage)
-
         self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
-
 
         self.toXmlLayout = QtWidgets.QHBoxLayout()
         self.toXmlLayout.setObjectName("toXmlLayout")
@@ -134,6 +137,7 @@ class Ui_MainWindow(object):
         self.openFile.setText(_translate("MainWindow", "打开文件"))
         self.saveFile.setText(_translate("MainWindow", "保存"))
         self.translate.setText(_translate("MainWindow", "翻译成"))
+        self.revoke.setText(_translate("MainWindow", "撤销"))
 
         self.toChina.setText(_translate("MainWindow", "百度翻译"))
         self.toEnglish.setText(_translate("MainWindow", "谷歌翻译"))
