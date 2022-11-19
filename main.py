@@ -35,8 +35,15 @@ ActiveProxies = []
 checkActiveIpNum = 0
 
 def revokeTranslate():
-    selected_items = tableWidget.selectedItems()
     global workbook
+    if workbook is None:
+        showdialog("注意", "请先打开一个.xls格式的文件!")
+        return
+    elif len(tableWidget.selectedItems()) < 1:
+        showdialog("注意", "请选择你需要翻译的单元格区域!")
+        return
+
+    selected_items = tableWidget.selectedItems()
     table = workbook.sheets()[0]
     for i in range(len(selected_items)):
         item = selected_items[i]
@@ -272,7 +279,7 @@ def baiduTranslate(translateItem: QTableWidgetItem, len= 0, proxy=""):
     time.sleep(0.8)
 
 
-def googleTranslate(translateItem: QTableWidgetItem, len= 0, proxies=""):
+def googleTranslate(translateItem: QTableWidgetItem, len=0, proxies=""):
     try:
         # 网站地址：谷歌翻译
         url = 'https://translate.google.hk/translate_a/single?client=gtx&sl=auto&tl=' + targetLanguage + '&dt=t&q=' + \
@@ -318,17 +325,17 @@ def translate():
 def startTranslate(isMulti=False):
     global translateNum
     translateNum = 0
-    selected_list = []
 
-    for i in range(len(tableWidget.selectedItems())):
-        selected_list.append(tableWidget.selectedItems()[i])
-
-    print("size = %d", len(selected_list))
+    print("size = %d", len(tableWidget.selectedItems()))
     translate_list = []
-    for i in range(len(selected_list)):
-        input_content = selected_list[i].text()
-        if len(input_content) > 0:
-            translate_list.append(selected_list[i])
+    table = workbook.sheets()[0]
+    for i in range(len(tableWidget.selectedItems())):
+        input_content = table.cell(tableWidget.selectedItems()[i].row(), tableWidget.selectedItems()[i].column()).value
+        #去空处理
+        if len(input_content.strip()) > 0:
+            tableWidget.selectedItems()[i].setText(input_content)
+            translate_list.append(tableWidget.selectedItems()[i])
+
     # 实例化 使用全局变量防止函数结束后被马上回收
     global so, childView
     so = SignalStore()
