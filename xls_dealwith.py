@@ -56,16 +56,16 @@ class Ui_MainWindow(object):
         self.lgLabel.setObjectName("lgLabel")
         self.horizontalLayout.addWidget(self.lgLabel)
 
-        self.toChina = QtWidgets.QRadioButton(self.centralwidget)
-        self.toChina.setObjectName("toChina")
-        self.horizontalLayout.addWidget(self.toChina)
+        self.toBaidu = QtWidgets.QRadioButton(self.centralwidget)
+        self.toBaidu.setObjectName("toBaidu")
+        self.horizontalLayout.addWidget(self.toBaidu)
 
-        self.toEnglish = QtWidgets.QRadioButton(self.centralwidget)
-        self.toEnglish.setObjectName("toEnglish")
-        self.toEnglish.setChecked(True)
-        self.horizontalLayout.addWidget(self.toEnglish)
+        self.toGoogle = QtWidgets.QRadioButton(self.centralwidget)
+        self.toGoogle.setObjectName("toGoogle")
+        self.toGoogle.setChecked(True)
+        self.horizontalLayout.addWidget(self.toGoogle)
 
-        self.toAllLanguage = QtWidgets.QRadioButton(self.centralwidget)
+        self.toAllLanguage = QtWidgets.QCheckBox(self.centralwidget)
         self.toAllLanguage.setObjectName("toAllLanguage")
         self.horizontalLayout.addWidget(self.toAllLanguage)
         self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
@@ -126,9 +126,9 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.toAllLanguage.clicked.connect(self.swithNotSimple)
-        self.toChina.clicked.connect(self.swithNotSimple)
-        self.toEnglish.clicked.connect(self.swithNotSimple)
+        self.toAllLanguage.clicked.connect(self.switchNotSimple)
+        self.toBaidu.clicked.connect(self.switchBaiduTranslate)
+        self.toGoogle.clicked.connect(self.switchNotSimple)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -139,8 +139,8 @@ class Ui_MainWindow(object):
         self.translate.setText(_translate("MainWindow", "翻译成"))
         self.revoke.setText(_translate("MainWindow", "撤销"))
 
-        self.toChina.setText(_translate("MainWindow", "百度翻译"))
-        self.toEnglish.setText(_translate("MainWindow", "谷歌翻译"))
+        self.toBaidu.setText(_translate("MainWindow", "百度翻译"))
+        self.toGoogle.setText(_translate("MainWindow", "谷歌翻译"))
         self.toAllLanguage.setText(_translate("MainWindow", "全部语言"))
         self.toXml.setText(_translate("MainWindow", "toXml"))
         self.keyLabel.setText(_translate("MainWindow", "keyColunm:"))
@@ -150,19 +150,29 @@ class Ui_MainWindow(object):
         for i in range(len(self.data)):
             self.comboBox.setItemText(i, _translate("MainWindow", self.data[i]['DisplayName']))
 
-    def swithNotSimple(self):
-        self.comboBox.clear()
-        if self.toChina.isChecked():
-            box = MyDailogBox()
-            box.information(box.mw, '注意', '百度翻译容易超时只能支持单线程翻译，所需时间可能比较长。')
-        list = []
-        self.data = readLanguageJson(self.toAllLanguage.isChecked(), self.toChina.isChecked())
+    def refreshSelectListView(self):
+        mList = []
+        self.data = readLanguageJson(self.toAllLanguage.isChecked(), self.toBaidu.isChecked())
         for i in range(len(self.data)):
-            list.append(self.data[i]['DisplayName'])
-        qCompleter1 = QCompleter(list)  # 列表填充
+            mList.append(self.data[i]['DisplayName'])
+        qCompleter1 = QCompleter(mList)  # 列表填充
         qCompleter1.setCaseSensitivity(Qt.CaseInsensitive)
         self.comboBox.setCompleter(qCompleter1)
-        self.comboBox.addItems(list)  # 添加列表
+        self.comboBox.addItems(mList)  # 添加列表
+
+    def switchNotSimple(self):
+        self.comboBox.clear()
+        self.refreshSelectListView()
+
+    def switchBaiduTranslate(self):
+        self.comboBox.clear()
+        if self.toBaidu.isChecked():
+            box = MyDailogBox()
+            box.information(box.mw, '注意', '百度翻译容易超时只能支持单线程翻译，所需时间可能比较长。')
+        self.refreshSelectListView()
+
+
+
 
 
 

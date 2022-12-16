@@ -31,8 +31,11 @@ tableWidget: QTableWidget
 targetLanguage = "en"
 workbook = None
 translateNum = 0
+translateProgress = 0
 ActiveProxies = []
 checkActiveIpNum = 0
+failureTranslates = []
+
 
 def revokeTranslate():
     global workbook
@@ -204,6 +207,10 @@ def progressbarChange(progress):
     so.progress_update.emit(progress)
 
 
+def processChange(length):
+    global so
+    so.process_main.emit(length)
+
 class TranslateItem:
     def __init__(self, pos=0, content=[]):
         self.pos = pos
@@ -243,14 +250,25 @@ def networkRequestSerise(translateList=[], proxies=""):
         networkRequest(translateList[i], len(translateList), proxies)
 
 
-def networkRequest(translateItem: QTableWidgetItem, len= 0, proxies=""):
-    if mainView.main_ui.toChina.isChecked():
+def networkRequest(translateItem: QTableWidgetItem, len=0, proxies=""):
+    if mainView.main_ui.toBaidu.isChecked():
         baiduTranslate(translateItem, len, proxies)
     else:
         googleTranslate(translateItem, len, proxies)
 
 
-def baiduTranslate(translateItem: QTableWidgetItem, len= 0, proxy=""):
+def retryTranslateAgain(length=0):
+    global translateProgress
+    global failureTranslates
+    t = threading.currentThread()
+    print('Thread id : %d' % t.ident)
+    translateProgress = length - len(failureTranslates)
+    retryTranslates = failureTranslates.copy()
+    for i in range(len(retryTranslates)):
+        baiduTranslate(retryTranslates[i], length, "")
+
+
+def baiduTranslate(translateItem: QTableWidgetItem, length=0, proxy=""):
     proxies_wrap = {'http': proxy}
     url = 'http://api.fanyi.baidu.com/api/trans/vip/translate'
     appid = '20190906000332471'
@@ -261,21 +279,40 @@ def baiduTranslate(translateItem: QTableWidgetItem, len= 0, proxy=""):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     payload = {'appid': appid, 'q': translateItem.text(), 'from': 'auto',
                'to': targetLanguage, 'salt': salt, 'sign': sign}
+    global translateProgress
+    translateProgress = translateProgress + 1
+    global failureTranslates, so
     try:
         r = requests.post(url, params=payload, headers=headers, proxies=proxies_wrap)
         if r.status_code == 200:
             result = r.json()
-            tableWidget.setItem(translateItem.row(), translateItem.column(), QTableWidgetItem(result["trans_result"][0]['dst']))
-            global translateNum
-            translateNum = translateNum + 1
-            progress = int(translateNum / len * 100)
-            print("the progress is %s:", progress)
-            worker = threading.Thread(target=progressbarChange(progress))
-            worker.start()
+            if 'error_code' in result:
+                print("error_code:" + result)
+                failureTranslates.append(translateItem)
+            else:
+                if translateItem in failureTranslates:
+                    failureTranslates.remove(translateItem)
+                tableWidget.setItem(translateItem.row(), translateItem.column(),
+                                    QTableWidgetItem(result["trans_result"][0]['dst']))
+                global translateNum
+                translateNum = translateNum + 1
+                progress = int(translateNum / length * 100)
+                print("the progress is %s:", progress)
+                worker = threading.Thread(target=progressbarChange(progress))
+                worker.start()
         else:
             showdialog("注意", r.text)
     except Exception as e:
-        print(e.args[0])
+        print(e)
+        failureTranslates.append(translateItem)
+    finally:
+        print(str(len(failureTranslates)))
+        t = threading.currentThread()
+        print('last Thread id : %d' % t.ident)
+        if translateProgress == length and length > translateNum:
+            print(failureTranslates)
+            worker = threading.Thread(target=processChange(length))
+            worker.start()
     time.sleep(0.8)
 
 
@@ -308,8 +345,13 @@ def googleTranslate(translateItem: QTableWidgetItem, len=0, proxies=""):
         print("Error: unable to start thread")
     time.sleep(0.05)
 
+
 # 翻译选中的单元格的内容为指定语言
 def translate():
+    global translateProgress
+    translateProgress = 0
+    global failureTranslates
+    failureTranslates = []
     if workbook is None:
         showdialog("注意", "请先打开一个.xls格式的文件!")
         return
@@ -317,10 +359,11 @@ def translate():
         showdialog("注意", "请选择你需要翻译的单元格区域!")
         return
     selectTargetLanguage()
-    if len(tableWidget.selectedItems()) < 10 or mainView.main_ui.toChina.isChecked():
+    if len(tableWidget.selectedItems()) < 10:
         startTranslate(False)
     else:
         getProxyAddress()
+
 
 def startTranslate(isMulti=False):
     global translateNum
@@ -331,7 +374,7 @@ def startTranslate(isMulti=False):
     table = workbook.sheets()[0]
     for i in range(len(tableWidget.selectedItems())):
         input_content = table.cell(tableWidget.selectedItems()[i].row(), tableWidget.selectedItems()[i].column()).value
-        #去空处理
+        # 去空处理
         if len(input_content.strip()) > 0:
             tableWidget.selectedItems()[i].setText(input_content)
             translate_list.append(tableWidget.selectedItems()[i])
@@ -339,6 +382,8 @@ def startTranslate(isMulti=False):
     # 实例化 使用全局变量防止函数结束后被马上回收
     global so, childView
     so = SignalStore()
+    so.process_main.connect(retryTranslateAgain)
+
     childView = ProgressBar()
 
     # 多线程调用网络接口翻译
@@ -349,7 +394,7 @@ def startTranslate(isMulti=False):
 
 
 def selectTargetLanguage():
-    data = readLanguageJson(mainView.main_ui.toAllLanguage.isChecked(),mainView.main_ui.toChina.isChecked())
+    data = readLanguageJson(mainView.main_ui.toAllLanguage.isChecked(), mainView.main_ui.toBaidu.isChecked())
     global targetLanguage
     targetLanguage = data[mainView.main_ui.comboBox.currentIndex()]['LangCultureName']
     print('targetlanguage %s', targetLanguage)
@@ -360,6 +405,7 @@ class SignalStore(QObject):
     # 定义一种信号
     progress_update = pyqtSignal(int)
     # 还可以定义其他作用的信号
+    process_main = pyqtSignal(int)
 
 
 class ProgressBar(QWidget):
