@@ -449,18 +449,20 @@ def convertxls():
         # eg:  <string name="authentication_title">Two-factor Authentication</string>
         if mainView.main_ui.includeHeader.isChecked():
             for i in range(sheets_.nrows):
-                if sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value is not None:
+                if len(sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value) > 0:
                     contentxls += '\t<string name="' + str(
                         sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value) + '">' \
                                   + str(
                         sheets_.cell(i, int(mainView.main_ui.valueEdit.text()) - 1).value) + '</string>\n'
         else:
             for i in range(sheets_.nrows):
-                if sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value is not None and i > 0:
+                if len(sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value) > 0 and i > 0:
                     contentxls += '\t<string name="' + str(
                         sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value) + '">' \
                                   + str(
                         sheets_.cell(i, int(mainView.main_ui.valueEdit.text()) - 1).value) + '</string>\n'
+                else:
+                    continue
         contentxls += '</resources>'
         print(contentxls)
 
