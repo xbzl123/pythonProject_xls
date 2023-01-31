@@ -80,7 +80,7 @@ def writeXls(strpath=""):
     oldsheet = workbook.sheets()[0]
     for i in range(oldsheet.nrows):
         for j in range(oldsheet.ncols):
-            sheet.write(i, j, oldsheet.cell(i, j).value)
+            sheet.write(i, j, tableWidget.item(i, j).text())
             # print(oldsheet.cell(i, j).value)
     # print(strpath)
     try:
@@ -138,17 +138,18 @@ class MyThread(threading.Thread):
 
 # 获取代理IP
 def getProxyAddress():
+    proxies = []
     try:
         # 网站地址
-        url = 'https://proxy.seofangfa.com/'
+        url = 'http://www.66ip.cn/index.html'
         head = {  # 模拟浏览器头部信息，向服务器发送消息
             "User-Agent": "Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 80.0.3987.122  Safari / 537.36"
         }
         r = requests.get(url, headers=head)
+        r.encoding = r.apparent_encoding
         dom = etree.HTML(r.text)
         url_path = '//td'
         urls = dom.xpath(url_path)
-        proxies = []
         for i in range(10):
             proxie = 'http://' + urls[i * 5].text + ':' + urls[i * 5 + 1].text
             proxies.append(proxie)
@@ -469,7 +470,11 @@ def convertxls():
         savefile_name = QFileDialog.getSaveFileName(None, "保存文件", "./", "Text Files (*.xml);;All Files (*)")
         if len(savefile_name[0]) > 0:
             savexml = open(savefile_name[0], 'w', encoding="utf-8")
-            savexml.write(contentxls)
+            ret = savexml.write(contentxls)
+            if ret > 0:
+                showdialog("注意", "文件转换成功!")
+            else:
+                showdialog("注意", "文件转换失败!")
             savexml.close()
 
 
