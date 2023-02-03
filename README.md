@@ -287,6 +287,7 @@ def baiduTranslate(translateItem: QTableWidgetItem, length=0, proxy=""):
 ```
 
 开始翻译后会有进度条弹框出现，后者在全部任务结束后会自动关闭。
+![total](pic/progress.jpg)
 
 进度条的刷新使用信号发送具体的参数。
 
