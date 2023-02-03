@@ -150,8 +150,8 @@ def getProxyAddress():
         dom = etree.HTML(r.text)
         url_path = '//td'
         urls = dom.xpath(url_path)
-        for i in range(10):
-            proxie = 'http://' + urls[i * 5].text + ':' + urls[i * 5 + 1].text
+        for i in range(6):
+            proxie = 'http://' + urls[i * 5 + 7].text + ':' + urls[i * 5 + 8].text
             proxies.append(proxie)
     except requests.exceptions.ConnectionError:
         showdialog("注意", "网络连接出现错误!")
