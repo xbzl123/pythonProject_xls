@@ -126,7 +126,7 @@ python爬虫做翻译工作要避免被目的网站察觉，我们需要使用ip
 def getProxyAddress():
     proxies = []
     try:
-        # 网站地址
+         # 网站地址
         url = 'http://www.66ip.cn/index.html'
         head = {  # 模拟浏览器头部信息，向服务器发送消息
             "User-Agent": "Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 80.0.3987.122  Safari / 537.36"
@@ -136,8 +136,8 @@ def getProxyAddress():
         dom = etree.HTML(r.text)
         url_path = '//td'
         urls = dom.xpath(url_path)
-        for i in range(10):
-            proxie = 'http://' + urls[i * 5].text + ':' + urls[i * 5 + 1].text
+        for i in range(6):
+            proxie = 'http://' + urls[i * 5 + 7].text + ':' + urls[i * 5 + 8].text
             proxies.append(proxie)
     except requests.exceptions.ConnectionError:
         showdialog("注意", "网络连接出现错误!")
