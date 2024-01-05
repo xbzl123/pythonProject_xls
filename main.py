@@ -40,7 +40,7 @@ failureTranslates = []
 def revokeTranslate():
     global workbook
     if workbook is None:
-        showdialog("注意", "请先打开一个.xls格式的文件!")
+        showdialog("注意", "请先打开一个excel格式的文件!")
         return
     elif len(tableWidget.selectedItems()) < 1:
         showdialog("注意", "请选择你需要翻译的单元格区域!")
@@ -58,7 +58,7 @@ def readXls(strpath=""):
     global workbook
     if strpath[1] == "":
         return
-    workbook = xlrd.open_workbook_xls(strpath[0][0])
+    workbook = xlrd.open_workbook(strpath[0][0])
     table = workbook.sheets()[0]
     # 按行读取
     tableWidget.setColumnCount(table.ncols)
@@ -97,12 +97,12 @@ class ParentWindow(QMainWindow):
         QMainWindow.__init__(self)
         self.main_ui = xls_dealwith.Ui_MainWindow()
         self.main_ui.setupUi(self)
-        self.setWindowTitle("xls 文件翻译")
+        self.setWindowTitle("excel 文件翻译")
         self.setWindowIcon(QIcon("icons/xls.jpg"))
 
 
 def openfile():
-    openfile_name = QFileDialog.getOpenFileNames(None, "请选择要添加的.xls格式文件", "./", "Text Files (*.xls);;All Files (*)")
+    openfile_name = QFileDialog.getOpenFileNames(None, "请选择要添加的excel格式文件", "./", "Text Files (*.xlsx);;Text Files (*.xls);;All Files (*)")
     # print(openfile_name)
     return readXls(openfile_name)
 
@@ -114,9 +114,9 @@ def showdialog(title='', message=''):
 
 def savefile():
     if workbook is None:
-        showdialog("注意", "请先打开一个.xls格式的文件!")
+        showdialog("注意", "请先打开一个excel格式的文件!")
         return
-    savefile_name = QFileDialog.getSaveFileName(None, "保存文件", "./", "Text Files (*.xls);;All Files (*)")
+    savefile_name = QFileDialog.getSaveFileName(None, "保存文件", "./", "Text Files (*.xlsx);;Text Files (*.xls);;All Files (*)")
     # print(savefile_name)
     if len(savefile_name[0]) < 1:
         return
@@ -354,7 +354,7 @@ def translate():
     global failureTranslates
     failureTranslates = []
     if workbook is None:
-        showdialog("注意", "请先打开一个.xls格式的文件!")
+        showdialog("注意", "请先打开一个excel格式的文件!")
         return
     elif len(tableWidget.selectedItems()) < 1:
         showdialog("注意", "请选择你需要翻译的单元格区域!")
@@ -443,7 +443,7 @@ class ProgressBar(QWidget):
 
 def convertxls():
     if workbook is None:
-        showdialog("注意", "请先打开一个.xls格式的文件!")
+        showdialog("注意", "请先打开一个excel格式的文件!")
     else:
         sheets_ = workbook.sheets()[0]
         contentxls = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
