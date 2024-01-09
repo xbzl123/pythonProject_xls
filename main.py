@@ -4,12 +4,13 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import _thread
 import json
+import os
 import random
+import shutil
 import sys
 import threading
 import time
 
-import execjs
 from PyQt5.QtGui import QIcon
 from lxml import etree
 
@@ -24,7 +25,7 @@ from PyQt5.QtWidgets import QFileDialog, QMainWindow, QTableWidget, QTableWidget
 import xls_dealwith
 from MyDialogBox import MyDailogBox
 from baidutranslateutil import make_md5
-from jsonReader import readLanguageJson
+from jsonReader import readLanguageJson, convertLanguageJsonToTran
 
 app = QtWidgets.QApplication(sys.argv)
 tableWidget: QTableWidget
@@ -141,7 +142,7 @@ def getProxyAddress():
     proxies = []
     try:
         # 网站地址
-        url = 'http://www.66ip.cn/index.html'
+        url = 'https://www.zdaye.com/free/2/'
         head = {  # 模拟浏览器头部信息，向服务器发送消息
             "User-Agent": "Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 80.0.3987.122  Safari / 537.36"
         }
@@ -150,9 +151,12 @@ def getProxyAddress():
         dom = etree.HTML(r.text)
         url_path = '//td'
         urls = dom.xpath(url_path)
-        for i in range(6):
-            proxie = 'http://' + urls[i * 5 + 7].text + ':' + urls[i * 5 + 8].text
-            proxies.append(proxie)
+        for i in range(len(urls)):
+            # print('text:'+urls[i].text)
+            if str(urls[i].text).find('.') > 2:
+                proxie = 'http://' + urls[i].text + ':' + urls[i+1].text
+                proxies.append(proxie)
+
     except requests.exceptions.ConnectionError:
         showdialog("注意", "网络连接出现错误!")
         print("Error: unable to connect success")
@@ -172,7 +176,7 @@ def getProxyAddress():
         except Exception as e:
             print('start thread :' + e.args[0])
         finally:
-            if len(proxies) > 0:
+            if len(proxies) > 2:
                 print('开始多线程翻译')
                 while True:
                     if checkActiveIpNum == len(proxies):
@@ -195,7 +199,7 @@ def checkActiveIp(proxy="", url="", num=0):
         global ActiveProxies
         ActiveProxies.append(proxy)
     except Exception as e:
-        print('当前IP无效:' + proxy)
+        print('当前IP无效:' + proxy + ',e=' +str(e.args))
     finally:
         global checkActiveIpNum
         checkActiveIpNum = checkActiveIpNum + 1
@@ -319,14 +323,26 @@ def baiduTranslate(translateItem: QTableWidgetItem, length=0, proxy=""):
 
 def googleTranslate(translateItem: QTableWidgetItem, len=0, proxies=""):
     try:
-        # 网站地址：谷歌翻译
-        url = 'https://translate.google.hk/translate_a/single?client=gtx&sl=auto&tl=' + targetLanguage + '&dt=t&q=' + \
-              translateItem.text()
+        if mainView.main_ui.selectFristHeader.isChecked():
+            table = workbook.sheets()[0]
+            #转换成en-us这种类型
+            tarlg = convertLanguageJsonToTran(False, False, table.cell(0, translateItem.column()).value)
+            if tarlg == '':
+                return
+            url = 'https://translate.google.hk/translate_a/single?client=gtx&sl=auto&tl=' + tarlg + '&dt=t&q=' + \
+                  table.cell(translateItem.row(), int(mainView.main_ui.soureceEdit.text())-1).value
+        else:
+            # 网站地址：谷歌翻译
+            url = 'https://translate.google.hk/translate_a/single?client=gtx&sl=auto&tl=' + targetLanguage + '&dt=t&q=' + \
+                  translateItem.text()
+
         head = {  # 模拟浏览器头部信息，向豆瓣服务器发送消息
             "User-Agent": "Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 80.0.3987.122  Safari / 537.36"
         }
         # 用户代理，表示告诉豆瓣服务器，我们是什么类型的机器、浏览器（本质上是告诉浏览器，我们可以接收什么水平的文件内容）
         proxies_wrap = {'http': proxies}
+        if proxies == '':
+            proxies_wrap = ''
         # 获取网页
         r = requests.get(url, headers=head, proxies=proxies_wrap)
         if r.status_code == 200:
@@ -344,6 +360,7 @@ def googleTranslate(translateItem: QTableWidgetItem, len=0, proxies=""):
             showdialog("注意", r.text)
     except requests.exceptions.ConnectionError:
         print("Error: unable to start thread")
+        showdialog("注意", '网络连接异常！')
     time.sleep(0.05)
 
 
@@ -370,21 +387,24 @@ def startTranslate(isMulti=False):
     global translateNum
     translateNum = 0
 
-    print("size = %d", len(tableWidget.selectedItems()))
+    print("size = ", len(tableWidget.selectedItems()))
     translate_list = []
     table = workbook.sheets()[0]
     for i in range(len(tableWidget.selectedItems())):
         input_content = table.cell(tableWidget.selectedItems()[i].row(), tableWidget.selectedItems()[i].column()).value
         # 去空处理
-        if len(input_content.strip()) > 0:
+        if len(input_content.strip()) > 0 and not mainView.main_ui.selectFristHeader.isChecked():
             tableWidget.selectedItems()[i].setText(input_content)
             translate_list.append(tableWidget.selectedItems()[i])
+        elif mainView.main_ui.selectFristHeader.isChecked():
+            if tableWidget.selectedItems()[i].column() != 0:
+                tableWidget.selectedItems()[i].setText(input_content)
+                translate_list.append(tableWidget.selectedItems()[i])
 
     # 实例化 使用全局变量防止函数结束后被马上回收
     global so, childView
     so = SignalStore()
     so.process_main.connect(retryTranslateAgain)
-
     childView = ProgressBar()
 
     # 多线程调用网络接口翻译
@@ -441,7 +461,7 @@ class ProgressBar(QWidget):
             return
 
 
-def convertxls():
+def convertCustomxls():
     if workbook is None:
         showdialog("注意", "请先打开一个excel格式的文件!")
     else:
@@ -477,6 +497,47 @@ def convertxls():
                 showdialog("注意", "文件转换失败!")
             savexml.close()
 
+def convertxls():
+    if workbook is None:
+        showdialog("注意", "请先打开一个excel格式的文件!")
+    else:
+        directory = 'output'
+        if os.path.exists(directory):
+            # 若目录存在，则删除该目录及其内容
+            shutil.rmtree(directory)
+        sheets_ = workbook.sheets()[0]
+        os.mkdir(directory)
+        os.mkdir(directory+'/res')
+        for i in range(sheets_.ncols):
+            if i > 0:
+                os.mkdir(directory+'/res/'+sheets_.cell(0, i).value)
+                contentxls = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
+                # eg:  <string name="authentication_title">Two-factor Authentication</string>
+                if mainView.main_ui.includeHeader.isChecked():
+                    for j in range(sheets_.nrows):
+                        if len(sheets_.cell(j, i).value) > 0:
+                            contentxls += '\t<string name="' + str(
+                                sheets_.cell(j, i).value) + '">' \
+                                          + str(sheets_.cell(j, i).value) + '</string>\n'
+                else:
+                    for j in range(sheets_.nrows):
+                        if j > 0:
+                            contentxls += '\t<string name="' + str(
+                                sheets_.cell(j, 0).value) + '">' \
+                                          + str(
+                                sheets_.cell(j, i).value) + '</string>\n'
+                        else:
+                            continue
+                contentxls += '</resources>'
+                # print(contentxls)
+                # print(sheets_.cell(0, i).value)
+                savexml = open(directory+'/res/'+sheets_.cell(0, i).value+'/strings.xml', 'w', encoding="utf-8")
+                ret = savexml.write(contentxls)
+                if ret > 0:
+                    showdialog("注意", "文件转换成功!")
+                else:
+                    showdialog("注意", "文件转换失败!")
+                savexml.close()
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -486,6 +547,7 @@ if __name__ == '__main__':
     mainView.main_ui.translate.clicked.connect(translate)
     mainView.main_ui.saveFile.clicked.connect(savefile)
     mainView.main_ui.toXml.clicked.connect(convertxls)
+    mainView.main_ui.toCustomXml.clicked.connect(convertCustomxls)
     mainView.main_ui.revoke.clicked.connect(revokeTranslate)
     mainView.show()
     sys.exit(app.exec_())

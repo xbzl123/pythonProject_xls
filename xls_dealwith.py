@@ -70,11 +70,16 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.toAllLanguage)
         self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
 
+
         self.toXmlLayout = QtWidgets.QHBoxLayout()
         self.toXmlLayout.setObjectName("toXmlLayout")
         self.toXml = QtWidgets.QPushButton(self.centralwidget)
         self.toXml.setObjectName("toXml")
         self.toXmlLayout.addWidget(self.toXml)
+
+        self.toCustomXml = QtWidgets.QPushButton(self.centralwidget)
+        self.toCustomXml.setObjectName("toCustomXml")
+        self.toXmlLayout.addWidget(self.toCustomXml)
 
         self.keyLabel = QtWidgets.QLabel(self.centralwidget)
         self.keyLabel.setObjectName("keyLabel")
@@ -104,11 +109,22 @@ class Ui_MainWindow(object):
         self.itemEdit.setText("string")
         self.toXmlLayout.addWidget(self.itemEdit)
 
-
         self.includeHeader = QtWidgets.QCheckBox(self.centralwidget)
         self.includeHeader.setObjectName("includeHeader")
         self.toXmlLayout.addWidget(self.includeHeader)
 
+        self.selectFristHeader = QtWidgets.QCheckBox(self.centralwidget)
+        self.selectFristHeader.setObjectName("selectHeader")
+        self.selectFristHeader.setChecked(True)
+        self.toXmlLayout.addWidget(self.selectFristHeader)
+
+        self.soureceLabel= QtWidgets.QLabel(self.centralwidget)
+        self.soureceLabel.setObjectName("soureceLabel")
+        self.toXmlLayout.addWidget(self.soureceLabel)
+        self.soureceEdit = QtWidgets.QLineEdit()
+        self.soureceEdit.setObjectName("keyEdit")
+        self.soureceEdit.setText("2")
+        self.toXmlLayout.addWidget(self.soureceEdit)
         self.gridLayout.addLayout(self.toXmlLayout, 1, 0, 1, 1)
 
         self.tableWidget = QtWidgets.QTableWidget(self.centralwidget)
@@ -143,10 +159,13 @@ class Ui_MainWindow(object):
         self.toGoogle.setText(_translate("MainWindow", "谷歌翻译"))
         self.toAllLanguage.setText(_translate("MainWindow", "全部语言"))
         self.toXml.setText(_translate("MainWindow", "toXml"))
+        self.toCustomXml.setText(_translate("MainWindow", "toCustomXml"))
         self.keyLabel.setText(_translate("MainWindow", "keyColunm:"))
         self.valueLabel.setText(_translate("MainWindow", "valueColunm:"))
         self.itemLabel.setText(_translate("MainWindow", "item:"))
         self.includeHeader.setText(_translate("MainWindow", "包含首行？"))
+        self.selectFristHeader.setText(_translate("MainWindow", "使用首行为翻译值？"))
+        self.soureceLabel.setText(_translate("MainWindow", "被翻译的列:"))
         for i in range(len(self.data)):
             self.comboBox.setItemText(i, _translate("MainWindow", self.data[i]['DisplayName']))
 
