@@ -397,7 +397,7 @@ def startTranslate(isMulti=False):
             tableWidget.selectedItems()[i].setText(input_content)
             translate_list.append(tableWidget.selectedItems()[i])
         elif mainView.main_ui.selectFristHeader.isChecked():
-            if tableWidget.selectedItems()[i].column() != 0:
+            if tableWidget.selectedItems()[i].column() > 1:
                 tableWidget.selectedItems()[i].setText(input_content)
                 translate_list.append(tableWidget.selectedItems()[i])
 
