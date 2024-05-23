@@ -1,6 +1,8 @@
 import json
-
-
+import os
+import sys
+# 获取打包后可执行文件的路径
+base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 def readLanguageJson(issimple=False, useBaiduTrans=False):
     ret = []
     if useBaiduTrans:
@@ -11,7 +13,7 @@ def readLanguageJson(issimple=False, useBaiduTrans=False):
         else:
             filename = "res/language_abb.json"
 
-    with open(filename, 'r', encoding='utf-8') as fw:
+    with open(os.path.join(base_path, filename), 'r', encoding='utf-8') as fw:
         content = fw.read().strip().replace('\n', '').replace('  ', '').replace('},{', '}},{')
         data = content.split('},')
         for i in range(len(data)):
@@ -33,7 +35,7 @@ def convertLanguageJsonToTran(issimple=False, useBaiduTrans=False, tarlg=''):
     tarlg = tarlg.replace('Hans', 'CN')
     tarlg = tarlg.replace('Hant', 'TW')
 
-    with open(filename, 'r', encoding='utf-8') as fw:
+    with open(os.path.join(base_path, filename), 'r', encoding='utf-8') as fw:
         content = fw.read().strip().replace('\n', '').replace('  ', '').replace('},{', '}},{')
         data = content.split('},')
         for i in range(len(data)):

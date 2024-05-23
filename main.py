@@ -162,7 +162,7 @@ def getProxyAddress():
         print("Error: unable to connect success")
     finally:
         # 检测代理IP是否有效
-        urls = ["http://httpbin.org/ip", "https://www.baidu.com", "https://www.google.com.hk", "https://www.sohu.com",
+        checkurls = ["http://httpbin.org/ip", "https://www.baidu.com", "https://www.google.com.hk", "https://www.sohu.com",
                 "https://mail.qq.com", "https://www.sina.com.cn", "https://mail.10086.cn", "https://www.sogou.com",
                 "https://juejin.cn", "https://mail.sina.com.cn"]
         print('开始IP检测')
@@ -172,7 +172,7 @@ def getProxyAddress():
         ActiveProxies = []
         try:
             for i in range(len(proxies)):
-                _thread.start_new_thread(checkActiveIp, (proxies[i], urls[i], len(proxies)))
+                _thread.start_new_thread(checkActiveIp, (proxies[i], checkurls[i], len(proxies)))
         except Exception as e:
             print('start thread :' + e.args[0])
         finally:
@@ -350,6 +350,7 @@ def googleTranslate(translateItem: QTableWidgetItem, len=0, proxies=""):
             result = load[0][0][0]
             print("the %s translates is :%s" % (translateItem.text(), result))
             tableWidget.setItem(translateItem.row(), translateItem.column(), QTableWidgetItem(result))
+            table.cell(translateItem.row(), int(mainView.main_ui.soureceEdit.text()) - 1).value = result
             global translateNum
             translateNum = translateNum + 1
             progress = int(translateNum / len * 100)
@@ -468,20 +469,29 @@ def convertCustomxls():
         sheets_ = workbook.sheets()[0]
         contentxls = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
         # eg:  <string name="authentication_title">Two-factor Authentication</string>
+
         if mainView.main_ui.includeHeader.isChecked():
             for i in range(sheets_.nrows):
                 if len(sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value) > 0:
+                    cell_value = str(sheets_.cell(i, int(mainView.main_ui.valueEdit.text()) - 1).value)
+                    if len(cell_value) < 1:
+                        continue
+                    cell_value = cell_value.replace('&', '&#38;')
+                    cell_value = cell_value.replace('\'', '\\\'')
                     contentxls += '\t<string name="' + str(
                         sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value) + '">' \
-                                  + str(
-                        sheets_.cell(i, int(mainView.main_ui.valueEdit.text()) - 1).value) + '</string>\n'
+                                  + cell_value + '</string>\n'
         else:
             for i in range(sheets_.nrows):
                 if len(sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value) > 0 and i > 0:
+                    cell_value = str(sheets_.cell(i, int(mainView.main_ui.valueEdit.text()) - 1).value)
+                    if len(cell_value) < 1:
+                        continue
+                    cell_value = cell_value.replace('&', '&#38;')
+                    cell_value = cell_value.replace('\'', '\\\'')
                     contentxls += '\t<string name="' + str(
                         sheets_.cell(i, int(mainView.main_ui.keyEdit.text()) - 1).value) + '">' \
-                                  + str(
-                        sheets_.cell(i, int(mainView.main_ui.valueEdit.text()) - 1).value) + '</string>\n'
+                                  + cell_value + '</string>\n'
                 else:
                     continue
         contentxls += '</resources>'
@@ -510,28 +520,37 @@ def convertxls():
         os.mkdir(directory+'/res')
         for i in range(sheets_.ncols):
             if i > 0:
-                os.mkdir(directory+'/res/'+sheets_.cell(0, i).value)
+                os.mkdir(directory+'/res/'+'values-'+sheets_.cell(0, i).value)
                 contentxls = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
                 # eg:  <string name="authentication_title">Two-factor Authentication</string>
                 if mainView.main_ui.includeHeader.isChecked():
                     for j in range(sheets_.nrows):
-                        if len(sheets_.cell(j, i).value) > 0:
+                        cell_value = str(sheets_.cell(j, i).value)
+                        if len(cell_value) < 1:
+                            continue
+                        if len(cell_value) > 0:
+                            cell_value = cell_value.replace('&', '&#38;')
+                            cell_value = cell_value.replace('\'', '\\\'')
                             contentxls += '\t<string name="' + str(
                                 sheets_.cell(j, i).value) + '">' \
-                                          + str(sheets_.cell(j, i).value) + '</string>\n'
+                                          + cell_value + '</string>\n'
                 else:
                     for j in range(sheets_.nrows):
                         if j > 0:
+                            cell_value = str(sheets_.cell(j, i).value)
+                            if len(cell_value) < 1:
+                                continue
+                            cell_value = cell_value.replace('&', '&#38;')
+                            cell_value = cell_value.replace('\'', '\\\'')
                             contentxls += '\t<string name="' + str(
                                 sheets_.cell(j, 0).value) + '">' \
-                                          + str(
-                                sheets_.cell(j, i).value) + '</string>\n'
+                                          + cell_value + '</string>\n'
                         else:
                             continue
                 contentxls += '</resources>'
                 # print(contentxls)
                 # print(sheets_.cell(0, i).value)
-                savexml = open(directory+'/res/'+sheets_.cell(0, i).value+'/strings.xml', 'w', encoding="utf-8")
+                savexml = open(directory+'/res/'+'values-'+sheets_.cell(0, i).value+'/strings.xml', 'w', encoding="utf-8")
                 ret = savexml.write(contentxls)
                 if ret > 0:
                     showdialog("注意", "文件转换成功!")
