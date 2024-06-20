@@ -350,7 +350,6 @@ def googleTranslate(translateItem: QTableWidgetItem, len=0, proxies=""):
             result = load[0][0][0]
             print("the %s translates is :%s" % (translateItem.text(), result))
             tableWidget.setItem(translateItem.row(), translateItem.column(), QTableWidgetItem(result))
-            table.cell(translateItem.row(), int(mainView.main_ui.soureceEdit.text()) - 1).value = result
             global translateNum
             translateNum = translateNum + 1
             progress = int(translateNum / len * 100)
@@ -408,11 +407,11 @@ def startTranslate(isMulti=False):
     so.process_main.connect(retryTranslateAgain)
     childView = ProgressBar()
 
-    # 多线程调用网络接口翻译
-    if isMulti:
-        multiNetworkTranslate(translate_list)
-    else:
-        _thread.start_new_thread(networkRequestSerise, (translate_list, ""))
+    # 多线程调用网络接口翻译，取消多线程翻译，难获取到稳定的代理ip
+    # if isMulti:
+    #     multiNetworkTranslate(translate_list)
+    # else:
+    _thread.start_new_thread(networkRequestSerise, (translate_list, ""))
 
 
 def selectTargetLanguage():
