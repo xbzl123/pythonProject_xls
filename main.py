@@ -176,15 +176,15 @@ def getProxyAddress():
         except Exception as e:
             print('start thread :' + e.args[0])
         finally:
-            if len(proxies) > 2:
-                print('开始多线程翻译')
-                while True:
-                    if checkActiveIpNum == len(proxies):
-                        startTranslate(True)
-                        break
-            else:
-                print('开始单线程翻译')
-                startTranslate(False)
+            # if len(proxies) > 2:
+            #     print('开始多线程翻译')
+            #     while True:
+            #         if checkActiveIpNum == len(proxies):
+            #             startTranslate(True)
+            #             break
+            # else:
+            print('开始单线程翻译')
+            startTranslate(False)
 
 
 # 筛选有效的代理IP
